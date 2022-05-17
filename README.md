@@ -7,6 +7,7 @@ Project goals is to deploy a home lab server. Server is multi purpose and will c
 List bellow will contain services/application that i want to deploy on this home lab server.
 
 - Proxmox
+- Proxmox backup server
 - Docker
   - Portainer
     - Nginx proxy manager
