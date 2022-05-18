@@ -23,3 +23,30 @@ List bellow will contain services/application that i want to deploy on this home
   - Mordhau (optional)
   - Xonotic
   - Quake LIVE
+
+# Nginx proxy manager advanced settings
+
+Here are some settings to set up in the proxy host advanced tab.
+
+```
+location /portainer/ {
+		rewrite ^/portainer(/.*)$ /$1 break;
+		proxy_pass http://portainer:9000/;
+		proxy_http_version 1.1;
+		proxy_set_header Connection "";
+	}
+
+	location /portainer/api {
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_pass http://portainer:9000/api;
+		proxy_set_header Connection 'upgrade';
+		proxy_http_version 1.1;
+	}
+
+	location /pi-hole/ {
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_pass http://pi-hole/admin/;
+		proxy_http_version 1.1;
+		proxy_set_header Connection "";
+	}
+```
