@@ -8,6 +8,7 @@ List bellow will contain services/application that i want to deploy on this home
 
 - Proxmox
 - Proxmox backup server
+- Steam OS Virtual machine
 - Docker
   - Portainer
     - Nginx proxy manager
