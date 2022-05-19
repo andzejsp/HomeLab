@@ -24,6 +24,25 @@ List bellow will contain services/application that i want to deploy on this home
   - Xonotic
   - Quake LIVE
 
+# Proxmox settings
+
+First install the proxmox then set these settings.
+
+# Docker in proxmox LXC
+
+## Portainer
+
+Installing portainer for the first time:
+```
+docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
+```
+
+Then add Nginx proxy manager container, set it up to reverse into portainer, then remove existing portainer and set it up once more:
+```
+docker run -d -p 8000:8000 --network nginxproxymanager_default --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
+```
+
+
 # Nginx proxy manager advanced settings
 
 Here are some settings to set up in the proxy host advanced tab.
