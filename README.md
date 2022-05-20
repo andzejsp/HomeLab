@@ -66,6 +66,8 @@ lvresize -l +100%FREE /dev/pve/root
 resize2fs /dev/mapper/pve-root
 ```
 
+## Laptop settings
+
 If you are running this on laptop, then its a good idea to make sure your laptop wont shut down once the lid is closed. In order to do that navigate to proxmox node and open up >_ Shell
 
 Change lid properties:
@@ -74,7 +76,7 @@ Change lid properties:
 nano /etc/systemd/logind.conf
 ```
 
-Edit/uncomment these lines:
+Unncomment and edit these lines:
 
 ```
 HandleLidSwitch=ignore 
@@ -98,7 +100,7 @@ Edit line:
 GRUB_CMDLINE_LINUX="consoleblank=60"
 ```
 
-It means after 60s the screen will go to sleep.
+It means after 60s the screen will turn off.
 
 Now update grub.
 
@@ -128,7 +130,7 @@ Navigate to proxmox node and on top right click Create CT. Give it a hostname an
 
 I used Unprivilaged container your needs may be different.
 
-Set storage CPU and Memory to your needs.
+Set storage CPU and Memory to your needs. For my test rig i set up 1 CPU core and 2G memory.
 
 Set Network parameters to your needs. You can always leave it on DHCP to get IP from your router. If you are hosting web services then its better to set up a static IP.
 
@@ -136,7 +138,7 @@ Create and start your container and make sure its running.
 
 ## Contianer console is blank?
 
-Sometimes console on your container boes blank and does not show you login information. Its a bug (still present in 7.2). 
+Sometimes console on your proxmox container goes blank and does not show you login information. Its a bug (still present in 7.2). 
 To fix it select your container > Options > Console mode > Edit
 
 Now instead of the default Console mode set it to shell. Reboot container.
@@ -236,13 +238,13 @@ services:
 
 Deploy stack.
 
-Now navigate to your http://container-ip:81/ and login as usr: admin@example.com pw: changeme
+Now navigate to your http://proxmox-container-ip:81/ and login as usr: admin@example.com pw: changeme
 
 Create new account and set up a password.
 
-Then add new proxy host (you have to get FQDN or in other words domain name for your host. Make sure it is an "A" record not an "CNAME" because you won't be able to get Let's encrypt certificates) 
+Then add new proxy host (you have to get FQDN or in other words domain name for your host. Make sure it is an "A" record not an "CNAME" otherwise you won't be able to get Let's encrypt certificates) 
 
-Set the domain name, scheme for portainer is http. Set portainer IP and port 9000.
+Set the domain name, scheme for portainer is http. Set portainer IP/or use hostname and port 9000.
 
 Set up SSL for your proxy host. Turn on Force SSL, HTTP/2 Support, HSTS Enabled. Get Let's encrypt certificates.
 
@@ -272,7 +274,9 @@ location /portainer/ {
 	}
 ```
 
-## Docker final touches
+## Final touches
+
+We need to add portainer to nginxproxymanager docker network.
 
 Navigate to your proxmox container shell/console.
 
