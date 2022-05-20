@@ -1,0 +1,29 @@
+---
+version: '3'
+services:
+  app:
+    image: 'jc21/nginx-proxy-manager:latest'
+    ports:
+      - '80:80' # <---- make sure these ports are forwarded if youre behind a router.
+      - '81:81' # <---- make sure these ports are forwarded if youre behind a router.
+      - '443:443' # <---- make sure these ports are forwarded if youre behind a router.
+    restart: always
+    environment:
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+    volumes:
+      -  ./nginxproxy-volume/data:/data
+      -  ./nginxproxy-volume/letsencrypt:/etc/letsencrypt
+  db:
+    image: 'jc21/mariadb-aria:latest'
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm'
+    volumes:
+      -  ./nginxproxy-volume/data/mysql:/var/lib/mysql
+    restart: always

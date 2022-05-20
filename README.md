@@ -223,7 +223,7 @@ Then add Nginx proxy manager container, set it up to reverse into portainer
 
 Set up a new stack and name it: nginxproxymanager
 
-Docker compose:
+Docker compose: [Template](Docker-compose-templates/nginxproxymanager.yml)
 ```
 ---
 version: '3'
@@ -323,3 +323,122 @@ docker run -d -p 8000:8000 --network nginxproxymanager_default --name=portainer 
 ```
 
 Now you are ready to get to work.
+
+# Server monitoring
+
+I have chosen to monitor my server and all the resources that i have using influxdb2, grafana. I will deploy them using another LXC container with portainer stack and hide the services behind a proxy.
+
+Create new file:
+
+```
+nano /etc/prometheus/prometheus.yml
+```
+
+Use [prometheus.yml](Configs/prometheus.yml) as a template.
+
+Creating docker compose: [Template](Configs/monitoring.yml)
+```
+---
+version: '3'
+
+volumes:
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+
+services:
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+  environment:
+      GF_PATHS_CONFIG: /etc/grafana/grafana.ini
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - /etc/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+    - 8080:8080
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+ #cadvisor:
+ #  image: gcr.io/cadvisor/cadvisor
+ #  container_name: cadvisor
+ #  ports:
+ #    - "8084:8080"
+ #  volumes:
+ #    - /:/rootfs:ro
+ #    - /var/run:/var/run:ro
+ #    - /sys:/sys:ro
+ #    - /var/lib/docker/:/var/lib/docker:ro
+ #    - /dev/disk/:/dev/disk:ro
+ #  devices:
+ #    - /dev/kmsg:/dev/kmsg
+ #  restart: unless-stopped
+    
+  valheim-old-server-status:
+    container_name: valheim-old-world-status
+    image: aldjinn/valheim-server-status:latest
+    ports:
+      - "13090:13090"
+    environment:
+      - VALHEIM_HOST=xx.xx.xx.xx
+      - VALHEIM_PORT=3456
+      - VALHEIM_QUERY_CRON=*/5 * * * *
+      - TELEGRAM_CHAT_ID=-123456789
+      - TELEGRAM_BOT=bot123456789:nuG0iuy7ae9eVah5eef8tahXee6eij8nieD
+      - TELEGRAM_ENABLED=false
+      - TELEGRAM_STARTUP_MESSAGE=false
+      - METRICS_ENABLED=true
+      - WEBHOOK_ENABLED=false
+      - CORS_ENABLED=true
+      - CORS_ALLOW_ORIGIN=*
+      
+  valheim-new-server-status:
+    container_name: valheim-new-world-status
+    image: aldjinn/valheim-server-status:latest
+    ports:
+      - "13080:13080"
+    environment:
+      - VALHEIM_HOST=xx.xx.xx.xx
+      - VALHEIM_PORT=2456
+      - VALHEIM_QUERY_CRON=*/5 * * * *
+      - TELEGRAM_CHAT_ID=-123456789
+      - TELEGRAM_BOT=bot123456789:nuG0iuy7ae9eVafd59f8tahXee6eij8nieD
+      - TELEGRAM_ENABLED=false
+      - TELEGRAM_STARTUP_MESSAGE=false
+      - METRICS_ENABLED=true
+      - WEBHOOK_ENABLED=false
+      - CORS_ENABLED=true
+      - CORS_ALLOW_ORIGIN=*
+```
+

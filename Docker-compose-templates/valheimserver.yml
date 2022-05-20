@@ -1,0 +1,57 @@
+---
+version: '2'
+services:
+  valheim-new:
+    image: lloesche/valheim-server
+    container_name: valheim-new
+    restart: always
+    environment:
+      - SERVER_NAME='New World'
+      - WORLD_NAME=newworld
+      - SERVER_PASS=password
+      - SERVER_PUBLIC=true
+      - DNS_1=8.8.8.8
+      - DNS_2=8.8.4.4
+      - ADMINLIST_IDS=steamID64(Dec)
+      - UPDATE_IF_IDLE=true
+      - RESTART_IF_IDLE=true
+      - BACKUPS=true
+      - BACKUPS_DIRECTORY=/config/backups
+      - BACKUPS_MAX_AGE=3
+      - BACKUPS_MAX_COUNT=5
+      - BACKUPS_IF_IDLE=true
+      - BACKUPS_IDLE_GRACE_PERIOD=3600
+      - STATUS_HTTP=true
+      - STATUS_HTTP_PORT=11080
+      - STATUS_HTTP_HTDOCS=/opt/valheim/htdocs
+    volumes:
+      - /etc/valheim-server-new-config:/config
+    ports:
+      - 2456-2458:2456-2458/udp
+  valheim-old:
+    image: lloesche/valheim-server
+    container_name: valheim-old
+    restart: always
+    environment:
+      - SERVER_NAME='Old World'
+      - WORLD_NAME=oldworld
+      - SERVER_PASS=Password
+      - SERVER_PUBLIC=true
+      - DNS_1=8.8.8.8
+      - DNS_2=8.8.4.4
+      - ADMINLIST_IDS=steamID64(Dec)
+      - UPDATE_IF_IDLE=true
+      - RESTART_IF_IDLE=true
+      - BACKUPS=true
+      - BACKUPS_DIRECTORY=/config/backups
+      - BACKUPS_MAX_AGE=3
+      - BACKUPS_MAX_COUNT=5
+      - BACKUPS_IF_IDLE=true
+      - BACKUPS_IDLE_GRACE_PERIOD=3600
+      - STATUS_HTTP=true
+      - STATUS_HTTP_PORT=11081
+      - STATUS_HTTP_HTDOCS=/opt/valheim/htdocs
+    volumes:
+      - /etc/valheim-server-old-config:/config
+    ports:
+      - 3456-3458:2456-2458/udp
