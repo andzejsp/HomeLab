@@ -38,6 +38,12 @@ I have condensed all the tutorial into this instruction set. Bellow you will fin
 - [Portainer Install Ubuntu tutorial - manage your docker containers](https://www.youtube.com/watch?v=ljDI5jykjE8)
 - [Nginx Proxy Manager - How-To Installation and Configuration](https://www.youtube.com/watch?v=P3imFC7GSr0&t=0s)
 
+## TODO
+
+List of resources to go through and make proper instruction set for deployment.
+
+- [My new Proxmox Monitoring Tools: InfluxDB2 + Grafana](https://www.youtube.com/watch?v=f2eyVfCTLi0)
+  
 # Proxmox installation
 
 Proxmox uses virtualization so you better check bios on your machine to enable CPU virtualization.
