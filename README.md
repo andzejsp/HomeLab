@@ -25,6 +25,19 @@ List bellow will contain services/application that i want to deploy on this home
   - Xonotic
   - Quake LIVE
 
+# Disclaimer
+
+I am not a professional techno jesus. Instructions bellow is for my personal use case. For all the n00bs out there use it at your own risk.
+
+# Resources
+
+I have condensed all the tutorial into this instruction set. Bellow you will find links to resources that i used. (Mostly videos).
+
+- [Virtual Machines Pt. 2 (Proxmox install w/ Kali Linux)](https://www.youtube.com/watch?v=_u8qTN3cCnQ)
+- [Docker Containers On Proxmox! (Two Different Ways - No VMs!)](https://www.youtube.com/watch?v=hDR_1opHGNQ)
+- [Portainer Install Ubuntu tutorial - manage your docker containers](https://www.youtube.com/watch?v=ljDI5jykjE8)
+- [Nginx Proxy Manager - How-To Installation and Configuration](https://www.youtube.com/watch?v=P3imFC7GSr0&t=0s)
+
 # Proxmox installation
 
 Proxmox uses virtualization so you better check bios on your machine to enable CPU virtualization.
