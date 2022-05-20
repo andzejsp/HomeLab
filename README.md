@@ -1,6 +1,6 @@
 # Home Lab project
 
-Project goals is to deploy a home lab server. Server is multi purpose and will contain multiple applications and services.
+Project goal is to deploy a home lab server. Server is multi purpose and will contain multiple applications and services.
 
 # List of services/applications to host
 
