@@ -9,15 +9,16 @@ List bellow will contain services/application that i want to deploy on this home
 - Proxmox
 - Proxmox backup server
 - Steam OS Virtual machine
-- Docker
+- Windows 10 Pro Virtual machine
+- Docker (in LXC)
   - Portainer
     - Nginx proxy manager
     - Nginx (web server - blog or something)
     - Nextcloud
     - Grafana
     - Prometheus
-- EmulationStation (with wii-u and ps3)
-- Pterodactyl (game server management)
+- EmulationStation (with wii-u and ps3) Virtual machine
+- Pterodactyl (game server management) TBD
   - Valheim New World
   - Valheim Old World
   - Mordhau (optional)
