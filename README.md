@@ -43,6 +43,7 @@ I have condensed all the tutorial into this instruction set. Bellow you will fin
 List of resources to go through and make proper instruction set for deployment.
 
 - [My new Proxmox Monitoring Tools: InfluxDB2 + Grafana](https://www.youtube.com/watch?v=f2eyVfCTLi0)
+- [Easily Manage Your Game Servers | Pterodactyl Installation Guide](https://www.youtube.com/watch?v=2mibJeaEq3Q)
   
 # Proxmox installation
 
