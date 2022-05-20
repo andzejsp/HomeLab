@@ -271,6 +271,21 @@ Set up SSL for your proxy host. Turn on Force SSL, HTTP/2 Support, HSTS Enabled.
 And in the advanced tab add these:
 
 ```
+# This is very important if you are using proxmox behind a proxy, otherwise you wont be able to access consoles and you will get noVNC errors and wont be able to see VM.
+
+location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade"; 
+        proxy_pass https://proxmox:8006;
+        proxy_buffering off;
+        client_max_body_size 0;
+        proxy_connect_timeout  3600s;
+        proxy_read_timeout  3600s;
+        proxy_send_timeout  3600s;
+        send_timeout  3600s;
+    }
+
 location /portainer/ {
 		rewrite ^/portainer(/.*)$ /$1 break;
 		proxy_pass http://portainer:9000/;
@@ -285,7 +300,7 @@ location /portainer/ {
 		proxy_http_version 1.1;
 	}
 
-# this is optional if you have pi-hole set up.
+# This is optional if you have pi-hole set up.
 	location /pi-hole/ {
 		proxy_set_header Upgrade $http_upgrade;
 		proxy_pass http://pi-hole/admin/;
