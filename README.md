@@ -585,6 +585,10 @@ And now the last thing is to set up your router to point to pi-hole as a DNS sev
 
 It is also a good practice to reboot your VM's and other services to get the DNS from DHCP of your router.
 
+## Adblock lists
+
+In the group settings find Adlist. From site [https://firebog.net/](https://firebog.net/) you add these links to your Adlist. After that update the gravity.
+
 # Pterodactyl installation
 
 The easiest way is to follow [the official documentation](https://pterodactyl.io/). Just create a dedicated VM with a static IP. I used ubuntu 20.04.4-live-server, gave it 8GiB RAM and 64GiB Hdd.
