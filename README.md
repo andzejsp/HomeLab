@@ -17,8 +17,9 @@ List bellow will contain services/application that i want to deploy on this home
     - Nextcloud
     - Grafana
     - Prometheus
+- Pi-hole (in LXC)
 - EmulationStation (with wii-u and ps3) Virtual machine
-- Pterodactyl (game server management) TBD
+- Pterodactyl (game server management)
   - Valheim New World
   - Valheim Old World
   - Mordhau (optional)
@@ -37,7 +38,7 @@ I have condensed all the tutorial into this instruction set. Bellow you will fin
 - [Docker Containers On Proxmox! (Two Different Ways - No VMs!)](https://www.youtube.com/watch?v=hDR_1opHGNQ)
 - [Portainer Install Ubuntu tutorial - manage your docker containers](https://www.youtube.com/watch?v=ljDI5jykjE8)
 - [Nginx Proxy Manager - How-To Installation and Configuration](https://www.youtube.com/watch?v=P3imFC7GSr0&t=0s)
-
+- [You're running Pi-Hole wrong! Setting up your own Recursive DNS Server!](https://www.youtube.com/watch?v=FnFtWsZ8IP0)
 ## TODO
 
 List of resources to go through and make proper instruction set for deployment.
@@ -458,3 +459,142 @@ services:
       - CORS_ALLOW_ORIGIN=*
 ```
 
+# Pi-hole (in LXC)
+
+I tried few CT templates (debian 11, ubuntu 22.04) and failed, some packages could not be found so i used ubuntu 21.10.
+
+Setting up CT make sure you give static ipv4 address and also add dns and name servers outside your network.
+
+I used [One-Step Automated Install](https://github.com/pi-hole/pi-hole/#one-step-automated-install)
+
+Firstly install curl:
+```
+apt update && apt upgrade && apt install curl -y
+```
+
+Then use the automated script:
+```
+curl -sSL https://install.pi-hole.net | bash
+```
+
+Use either google or open DNS at first, later we will chnage to recursive local DNS.
+
+After install is complete make sure to note the password that shows up on screen.
+
+Log into admin panel using http://static-ipv4-address/admin
+
+In case you forgot the password, you can always change it with this command:
+```
+pihole -a -p
+```
+
+Next we setup unbound using [this documentation](https://docs.pi-hole.net/guides/dns/unbound/#setting-up-pi-hole-as-a-recursive-dns-server-solution).
+
+```
+apt install unbound -y
+```
+
+Create configuration file:
+```
+nano /etc/unbound/unbound.conf.d/pi-hole.conf
+```
+
+```
+server:
+    # If no logfile is specified, syslog is used
+    # logfile: "/var/log/unbound/unbound.log"
+    verbosity: 0
+
+    interface: 127.0.0.1
+    port: 5335
+    do-ip4: yes
+    do-udp: yes
+    do-tcp: yes
+
+    # May be set to yes if you have IPv6 connectivity
+    do-ip6: no
+
+    # You want to leave this to no unless you have *native* IPv6. With 6to4 and
+    # Terredo tunnels your web browser should favor IPv4 for the same reasons
+    prefer-ip6: no
+
+    # Use this only when you downloaded the list of primary root servers!
+    # If you use the default dns-root-data package, unbound will find it automatically
+    #root-hints: "/var/lib/unbound/root.hints"
+
+    # Trust glue only if it is within the server's authority
+    harden-glue: yes
+
+    # Require DNSSEC data for trust-anchored zones, if such data is absent, the zone becomes BOGUS
+    harden-dnssec-stripped: yes
+
+    # Don't use Capitalization randomization as it known to cause DNSSEC issues sometimes
+    # see https://discourse.pi-hole.net/t/unbound-stubby-or-dnscrypt-proxy/9378 for further details
+    use-caps-for-id: no
+
+    # Reduce EDNS reassembly buffer size.
+    # IP fragmentation is unreliable on the Internet today, and can cause
+    # transmission failures when large DNS messages are sent via UDP. Even
+    # when fragmentation does work, it may not be secure; it is theoretically
+    # possible to spoof parts of a fragmented DNS message, without easy
+    # detection at the receiving end. Recently, there was an excellent study
+    # >>> Defragmenting DNS - Determining the optimal maximum UDP response size for DNS <<<
+    # by Axel Koolhaas, and Tjeerd Slokker (https://indico.dns-oarc.net/event/36/contributions/776/)
+    # in collaboration with NLnet Labs explored DNS using real world data from the
+    # the RIPE Atlas probes and the researchers suggested different values for
+    # IPv4 and IPv6 and in different scenarios. They advise that servers should
+    # be configured to limit DNS messages sent over UDP to a size that will not
+    # trigger fragmentation on typical network links. DNS servers can switch
+    # from UDP to TCP when a DNS response is too big to fit in this limited
+    # buffer size. This value has also been suggested in DNS Flag Day 2020.
+    edns-buffer-size: 1232
+
+    # Perform prefetching of close to expired message cache entries
+    # This only applies to domains that have been frequently queried
+    prefetch: yes
+
+    # One thread should be sufficient, can be increased on beefy machines. In reality for most users running on small networks or on a single machine, it should be unnecessary to seek performance enhancement by increasing num-threads above 1.
+    num-threads: 1
+
+    # Ensure kernel buffer is large enough to not lose messages in traffic spikes
+    so-rcvbuf: 1m
+
+    # Ensure privacy of local IP ranges
+    private-address: 192.168.0.0/16
+    private-address: 169.254.0.0/16
+    private-address: 172.16.0.0/12
+    private-address: 10.0.0.0/8
+    private-address: fd00::/8
+    private-address: fe80::/10
+
+```
+
+Start your local recursive server and test that it's operational:
+
+```
+service unbound restart
+```
+```
+dig pi-hole.net @127.0.0.1 -p 5335
+```
+
+Now in the pi-hole admin panel we need to change upstream DNS servers. Settings > DNS > Uncheck ipv4 google or openDNS from the upstream servers, add Custom 1 ipv4 DNS server: 127.0.0.1#5335 > Save
+
+And now the last thing is to set up your router to point to pi-hole as a DNS sever. Look up your router configuration manual and see how to change DNS server. I usually leave one DNS ip that my ISP provided in case my pi-hole goes down, so that i dont lose connection to the interwebs.
+
+It is also a good practice to reboot your VM's and other services to get the DNS from DHCP of your router.
+
+# Pterodactyl installation
+
+The easiest way is to follow [the official documentation](https://pterodactyl.io/). Just create a dedicated VM with a static IP. I used ubuntu 20.04.4-live-server, gave it 8GiB RAM and 64GiB Hdd.
+
+RAM usage based on game server so far (for one server instance):
+- 2GiB
+  - Valheim
+  - Quake Live
+- 2.5GiB
+  - Xonotic
+
+Setting up web server i used Nginx without SSL because im using Nginx reverse proxy manager to handle SSL certs. But note that you wont be able to access game server consoles from outside networks, because by default pterodactyl needs SSL certs to manage some kind of services.
+
+Also make sure to forward any ports that your game server needs.
