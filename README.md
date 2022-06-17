@@ -46,6 +46,7 @@ List of resources to go through and make proper instruction set for deployment.
 - [My new Proxmox Monitoring Tools: InfluxDB2 + Grafana](https://www.youtube.com/watch?v=f2eyVfCTLi0)
 - [https://github.com/theVakhovskeIsTaken/holoiso](https://github.com/theVakhovskeIsTaken/holoiso)
 - [https://www.youtube.com/watch?v=fzBCR_C26QE](https://www.youtube.com/watch?v=fzBCR_C26QE)
+- [https://www.youtube.com/watch?v=Qrglquxw-6I](https://www.youtube.com/watch?v=Qrglquxw-6I)
   
 # Proxmox installation
 
