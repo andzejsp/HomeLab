@@ -2,6 +2,37 @@
 
 Project goal is to deploy a home lab server. Server is multi purpose and will contain multiple applications and services.
 
+# Table of contents
+- [Home Lab project](#home-lab-project)
+- [Table of contents](#table-of-contents)
+- [List of services/applications to host](#list-of-servicesapplications-to-host)
+- [Disclaimer](#disclaimer)
+- [Resources](#resources)
+  - [TODO](#todo)
+- [Proxmox installation](#proxmox-installation)
+- [Proxmox first time setup](#proxmox-first-time-setup)
+  - [Laptop settings](#laptop-settings)
+- [Docker in proxmox LXC](#docker-in-proxmox-lxc)
+  - [CT Templates](#ct-templates)
+  - [Create CT](#create-ct)
+  - [Contianer console is blank?](#contianer-console-is-blank)
+  - [Pre Docker installation settings](#pre-docker-installation-settings)
+  - [Docker installation](#docker-installation)
+  - [Portainer setup](#portainer-setup)
+    - [Setting up Nginx proxy manager](#setting-up-nginx-proxy-manager)
+  - [Final touches](#final-touches)
+- [Server monitoring](#server-monitoring)
+- [Pi-hole (in LXC)](#pi-hole-in-lxc)
+  - [Adblock lists](#adblock-lists)
+- [Pterodactyl installation](#pterodactyl-installation)
+- [Matrix synapse Docker deployment](#matrix-synapse-docker-deployment)
+  - [Generate a config file](#generate-a-config-file)
+  - [Running synapse container](#running-synapse-container)
+  - [Generating an (admin) user](#generating-an-admin-user)
+  - [Get yourself a matrix client](#get-yourself-a-matrix-client)
+  - [Setting up Nginx Proxy manager (federation)](#setting-up-nginx-proxy-manager-federation)
+
+
 # List of services/applications to host
 
 List bellow will contain services/application that i want to deploy on this home lab server.
@@ -192,24 +223,24 @@ Save changes and reboot container.
 ## Docker installation
 
 Run these commands:
-```
+```sh
 apt-get update
 ```
 
-```
+```sh
 apt-get install ca-certificates curl gnupg lsb-release
 ```
 
-```
+```sh
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 ```
 
-```
+```sh
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
      $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
-```
+```sh
 apt-get update
 ```
 
@@ -220,7 +251,7 @@ Now you can install docker containers.
 Navigate to your proxmox container shell/console.
 
 Installing portainer for the first time:
-```
+```docker
 docker run -d -p 8000:8000 -p 9000:9000 --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
 ```
 Then add Nginx proxy manager container, set it up to reverse into portainer
@@ -229,7 +260,7 @@ Then add Nginx proxy manager container, set it up to reverse into portainer
 Set up a new stack and name it: nginxproxymanager
 
 Docker compose: [Template](Docker-compose-templates/nginxproxymanager.yml)
-```
+```yaml
 ---
 version: '3'
 services:
@@ -275,7 +306,7 @@ Set up SSL for your proxy host. Turn on Force SSL, HTTP/2 Support, HSTS Enabled.
 
 And in the advanced tab add these:
 
-```
+```nginx
 # This is very important if you are using proxmox behind a proxy, otherwise you wont be able to access consoles and you will get noVNC errors and wont be able to see VM.
 
 location / {
@@ -338,7 +369,7 @@ docker network ls
 
 Now deploy portainer once and for all:
 
-```
+```docker
 docker run -d -p 8000:8000 --network nginxproxymanager_default --name=portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce
 ```
 
@@ -357,7 +388,7 @@ nano /etc/prometheus/prometheus.yml
 Use [prometheus.yml](Configs/prometheus.yml) as a template.
 
 Creating docker compose: [Template](Configs/monitoring.yml)
-```
+```yaml
 ---
 version: '3'
 
@@ -476,7 +507,7 @@ apt update && apt upgrade && apt install curl -y
 ```
 
 Then use the automated script:
-```
+```sh
 curl -sSL https://install.pi-hole.net | bash
 ```
 
@@ -502,7 +533,7 @@ Create configuration file:
 nano /etc/unbound/unbound.conf.d/pi-hole.conf
 ```
 
-```
+```conf
 server:
     # If no logfile is specified, syslog is used
     # logfile: "/var/log/unbound/unbound.log"
@@ -605,3 +636,115 @@ RAM usage based on game server so far (for one server instance):
 Setting up web server i used Nginx without SSL because im using Nginx reverse proxy manager to handle SSL certs. But note that you wont be able to access game server consoles from outside networks, because by default pterodactyl needs SSL certs to manage some kind of services.
 
 Also make sure to forward any ports that your game server needs.
+
+# Matrix synapse Docker deployment
+
+Before we start, you need to have docker engine running on your system. After that we will follow the [official instructions](https://hub.docker.com/r/matrixdotorg/synapse/).
+
+## Generate a config file
+
+The first step is to generate a valid config file. To do this, you can run the image with the generate command line option.
+
+You will need to specify values for the` SYNAPSE_SERVER_NAME` and `SYNAPSE_REPORT_STATS` environment variable, and mount a docker volume to store the configuration on. For example:
+```docker
+docker run -it --rm \
+    --mount type=volume,src=synapse-data,dst=/data \
+    -e SYNAPSE_SERVER_NAME=my.matrix.host \
+    -e SYNAPSE_REPORT_STATS=yes \
+    matrixdotorg/synapse:latest generate
+```
+
+After that you will have to navigate to your docker volume. Most likely you will have to use `root` user to access the file.
+```
+sudo su root
+```
+then
+```
+nano /var/lib/docker/volumes/synapse-data/_data/homeserver.yaml
+```
+contents should look like this:
+```yaml
+# Configuration file for Synapse.
+#
+# This is a YAML file: see [1] for a quick introduction. Note in particular
+# that *indentation is important*: all the elements of a list or dictionary
+# should have the same indentation.
+#
+# [1] https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+#
+# For more information on how to configure Synapse, including a complete accounting of
+# each option, go to docs/usage/configuration/config_documentation.md or
+# https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html
+server_name: "my.matrix.host"
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+log_config: "/data/my.matrix.host.log.config"
+media_store_path: /data/media_store
+registration_shared_secret: "super-secret-key"
+report_stats: true
+macaroon_secret_key: "super-secret-key"
+form_secret_key: "super-secret-key"
+signing_key_path: "/data/my.matrix.host.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+use_presence: true
+client_max_body_size: 50M
+```
+
+## Running synapse container
+
+Next we start our synapse container.
+
+```docker
+docker run -d --name synapse \
+    --mount type=volume,src=synapse-data,dst=/data \
+    -p 8008:8008 \
+    matrixdotorg/synapse:latest
+```
+
+## Generating an (admin) user
+
+To see the optional arguments use this:
+
+```docker
+docker exec -it synapse register_new_matrix_user http://local-ip-of-your-docker-machine:8008 -c /data/homeserver.yaml --help
+```
+
+To register admin account do this:
+
+```docker
+docker exec -it synapse register_new_matrix_user http://local-ip-of-your-docker-machine:8008 -c /data/homeserver.yaml -u Your-username -p Your-password -a
+```
+
+## Get yourself a matrix client
+
+To access your server you must get or use 3rd party clients. There are many to choose from. More infromation can be found at [https://matrix.org/clients/](https://matrix.org/clients/).
+
+## Setting up Nginx Proxy manager (federation)
+
+To be able to access the federated homeserver/servers (other public servers and their channels/rooms from your homeserver) you need to do this:
+
+Open up `Nginx proxy manager` UI. Under `Proxy Hosts` add a new proxy host to your matrix server. Enter domain name, scheme: http, enter your matrix-synapse server ip and port should be 8008. Check `Cache Assets`: true, `Block Common exploits`: true, `Websockets Support`: true. Under SSL tab get a new certificate, `Force SSL`: true, `HSTS Enabled`: true. Under advanced enter this:
+```
+add_header Access-Control-Allow-Origin *;
+listen 8448 ssl http2;
+
+location /.well-known/matrix/server {
+    return 200 '{"m.server": "my.matrix.host:443"}'; # <- Be sure to  change this to your domain
+    default_type application/json;
+    add_header Access-Control-Allow-Origin *;
+}
+```
+
+Now you should be able to access other servers/channels.
