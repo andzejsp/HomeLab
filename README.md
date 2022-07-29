@@ -758,6 +758,12 @@ mkdir synapse && cd synapse && mkdir data
 ```
 Now create `docker-compose.yml` file and add the contents:
 
+```
+nano docker-compose.yml
+```
+
+And add this to it:
+
 ```yml
 version: "3.3"
 
@@ -792,9 +798,7 @@ networks:
 
 Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits.
 
-Now lets generate config file. Run command:
-
-
+Now lets generate new synapse config file in `/synapse/data/` directory. Run command:
 ```docker
 docker run -it --rm \
     --mount type=bind,src="$(pwd)"/data,dst=/data \
@@ -802,11 +806,98 @@ docker run -it --rm \
     -e SYNAPSE_REPORT_STATS=yes \
     matrixdotorg/synapse:latest generate
 ```
+Lets edit that homeserver.yaml file:
+
+```
+sudo nano /data/homeserver.yaml
+```
+
+Now you should see something like this:
+
+```yml
+# Configuration file for Synapse.
+#
+# This is a YAML file: see [1] for a quick introduction. Note in particular
+# that *indentation is important*: all the elements of a list or dictionary
+# should have the same indentation.
+#
+# [1] https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+#
+# For more information on how to configure Synapse, including a complete accounting of
+# each option, go to docs/usage/configuration/config_documentation.md or
+# https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html
+server_name: "my.matrix.host"
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+log_config: "/data/my.matrix.host.log.config"
+media_store_path: /data/media_store
+registration_shared_secret: "@Wi=-m16+cQ5E#WBzLv:e.,K2dUzQsrdWf8SYSCSVe+Ro.K3jw"
+report_stats: true
+macaroon_secret_key: "@A8d~i1Qous5w+Q4*VqCrWwrmAsb:;VGmv0Zuv87SVVM=4FaZz"
+form_secret: "kidxcd-.NnXBnKor,2GvrzV8XB1emK.e6PEpF@*,ajc0AV:.Nd"
+signing_key_path: "/data/my.matrix.host.signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
 
 
-Make sure to edit this file to your prefernces. Use my 
+# vim:ft=yaml
+```
 
+Now in order to use PostgreSQL with your synapse you need to delete the database part of this config:
+
+```yml
+database:
+  name: sqlite3
+  args:
+    database: /data/homeserver.db
+```
+
+And replace it with this (making appropriate changes):
+
+```yml
+database:
+    name: psycopg2
+    args:
+        user: synapse
+        password: "super-secret-password"
+        host: postgresql
+        database: synapse
+        cp_min: 5
+        cp_max: 10
+```
+
+The `host: postgresql` is from docker-compose.yml, we will launch the synapse service along with postgresql.
+
+Now add more settings to the `homeserver.yaml`:
+```yml
+trusted_key_servers:
+  - server_name: "matrix.org"
+enable_registration: true
+enable_registration_without_verification: true
+client_max_body_size: 50M
+auto_join_rooms:                         # this is optional and you can comment this out.
+  - "#exampleroom:sub.domain.com"        # change the exampleroom for the name of your public room you will have on the server for people to auto join.
+  - "#anotherexampleroom:sub.domain.com" # you can add another room for new users to join
+```
+
+Make sure that your reverse proxy is set up to allow federation. Follow the instructions that are written [here](#setting-up-nginx-proxy-manager-federation).
+
+
+Now youre ready to deploy. 
 
 ```
 docker-compose up -d
 ```
+
+Now Get yourself a client, read up [here](#get-yourself-a-matrix-client). And try to join your server, and create an account.
