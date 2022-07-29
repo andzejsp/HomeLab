@@ -792,7 +792,7 @@ services:
         networks: ["matrix-server"]
 
 networks:
-    server:
+    matrix-server:
         external: true
 ```
 
