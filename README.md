@@ -809,7 +809,7 @@ docker run -it --rm \
 Lets edit that homeserver.yaml file:
 
 ```
-sudo nano /data/homeserver.yaml
+sudo nano data/homeserver.yaml
 ```
 
 Now you should see something like this:
