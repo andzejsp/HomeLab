@@ -796,7 +796,10 @@ networks:
         external: true
 ```
 
-Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits.
+Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits. To generate random password use this:
+```
+openssl rand -base64 32
+```
 
 Now lets generate new synapse config file in `/synapse/data/` directory. Run command:
 ```docker
