@@ -896,6 +896,10 @@ auto_join_rooms:                         # this is optional and you can comment 
 
 Make sure that your reverse proxy is set up to allow federation. Follow the instructions that are written [here](#setting-up-nginx-proxy-manager-federation).
 
+Before we use docker compose we need to create our network:
+```
+docker network create matrix-server
+```
 
 Now youre ready to deploy. 
 
