@@ -770,6 +770,9 @@ version: "3.3"
 services:
     synapse:
         image: "matrixdotorg/synapse:latest"
+        ports:
+          - "8008:8008"
+        restart: always
         container_name: "synapse"
         volumes:
             - "./data:/data"
@@ -793,7 +796,6 @@ services:
 
 networks:
     matrix-server:
-        external: true
 ```
 
 Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits. To generate random password use this:
@@ -896,15 +898,14 @@ auto_join_rooms:                         # this is optional and you can comment 
 
 Make sure that your reverse proxy is set up to allow federation. Follow the instructions that are written [here](#setting-up-nginx-proxy-manager-federation).
 
-Before we use docker compose we need to create our network:
-```
-docker network create matrix-server
-```
-
 Now youre ready to deploy. 
 
 ```
 docker-compose up -d
+```
+Now before you get your panties wet, you must register yourself as an admin account. Use this (edit before use):
+```docker
+docker exec -it synapse register_new_matrix_user http://local-ip-of-your-docker-machine:8008 -c /data/homeserver.yaml -u Your-username -p Your-password -a
 ```
 
 Now Get yourself a client, read up [here](#get-yourself-a-matrix-client). And try to join your server, and create an account.
