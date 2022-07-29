@@ -801,7 +801,7 @@ Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with 
 openssl rand -base64 32
 ```
 
-Now lets generate new synapse config file in `/synapse/data/` directory. Run command (be sure to change the SYNAPSE_SERVER_NAME to your domain):
+Now lets generate new synapse config file in `/synapse/data/` directory. Run command (be sure to change the `SYNAPSE_SERVER_NAME` to your domain):
 ```docker
 docker run -it --rm \
     --mount type=bind,src="$(pwd)"/data,dst=/data \
