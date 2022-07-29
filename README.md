@@ -25,12 +25,13 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
 - [Pi-hole (in LXC)](#pi-hole-in-lxc)
   - [Adblock lists](#adblock-lists)
 - [Pterodactyl installation](#pterodactyl-installation)
-- [Matrix synapse Docker deployment](#matrix-synapse-docker-deployment)
+- [Matrix synapse Docker deployment [TEST environment]](#matrix-synapse-docker-deployment-test-environment)
   - [Generate a config file](#generate-a-config-file)
   - [Running synapse container](#running-synapse-container)
   - [Generating an (admin) user](#generating-an-admin-user)
   - [Get yourself a matrix client](#get-yourself-a-matrix-client)
   - [Setting up Nginx Proxy manager (federation)](#setting-up-nginx-proxy-manager-federation)
+- [Matrix synapse Docker deployment [PostgreSQL]](#matrix-synapse-docker-deployment-postgresql)
 
 
 # List of services/applications to host
@@ -637,7 +638,7 @@ Setting up web server i used Nginx without SSL because im using Nginx reverse pr
 
 Also make sure to forward any ports that your game server needs.
 
-# Matrix synapse Docker deployment
+# Matrix synapse Docker deployment [TEST environment]
 
 Before we start, you need to have docker engine running on your system. After that we will follow the [official instructions](https://hub.docker.com/r/matrixdotorg/synapse/).
 
@@ -748,3 +749,64 @@ location /.well-known/matrix/server {
 ```
 
 Now you should be able to access other servers/channels.
+
+# Matrix synapse Docker deployment [PostgreSQL]
+
+First we will create directory called `synapse`, then add another directory inside it called `data`.
+```
+mkdir synapse && cd synapse && mkdir data
+```
+Now create `docker-compose.yml` file and add the contents:
+
+```yml
+version: "3.3"
+
+services:
+    synapse:
+        image: "matrixdotorg/synapse:latest"
+        container_name: "synapse"
+        volumes:
+            - "./data:/data"
+        environment:
+            VIRTUAL_HOST: "sub.domain.com"
+            VIRTUAL_PORT: 8008
+            SYNAPSE_SERVER_NAME: "sub.domain.com"
+            SYNAPSE_REPORT_STATS: "yes"
+        networks: ["matrix-server"]
+    postgresql:
+        image: postgres:latest
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: somepassword
+            POSTGRES_USER: synapse
+            POSTGRES_DB: synapse
+            POSTGRES_INITDB_ARGS: "--encoding='UTF8' --lc-collate='C' --lc-ctype='C'"
+        volumes:
+            - "./postgresdata:/var/lib/postgresql/"
+        networks: ["matrix-server"]
+
+networks:
+    server:
+        external: true
+```
+
+Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits.
+
+Now lets generate config file. Run command:
+
+
+```docker
+docker run -it --rm \
+    --mount type=bind,src="$(pwd)"/data,dst=/data \
+    -e SYNAPSE_SERVER_NAME=my.matrix.host \
+    -e SYNAPSE_REPORT_STATS=yes \
+    matrixdotorg/synapse:latest generate
+```
+
+
+Make sure to edit this file to your prefernces. Use my 
+
+
+```
+docker-compose up -d
+```
