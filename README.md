@@ -32,7 +32,11 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
   - [Get yourself a matrix client](#get-yourself-a-matrix-client)
   - [Setting up Nginx Proxy manager (federation)](#setting-up-nginx-proxy-manager-federation)
 - [Matrix synapse Docker deployment [PostgreSQL]](#matrix-synapse-docker-deployment-postgresql)
-  - [PostgreSQL basic usage (editing users)](#postgresql-basic-usage-editing-users)
+  - [Create docker-compose file](#create-docker-compose-file)
+  - [Generate a config file](#generate-a-config-file-1)
+  - [Generating an (admin) user](#generating-an-admin-user-1)
+  - [Get yourself a matrix client](#get-yourself-a-matrix-client-1)
+  - [PostgreSQL basic usage](#postgresql-basic-usage)
 
 
 # List of services/applications to host
@@ -757,7 +761,10 @@ First we will create directory called `synapse`, then add another directory insi
 ```
 mkdir synapse && cd synapse && mkdir data
 ```
-Now create `docker-compose.yml` file and add the contents:
+
+## Create docker-compose file
+
+Now create `docker-compose.yml` file and add the contents (be sure to edit your domain names and passwords):
 
 ```
 nano docker-compose.yml
@@ -794,16 +801,38 @@ services:
         volumes:
             - "./postgresdata:/var/lib/postgresql/"
         networks: ["matrix-server"]
-
+    pgbackups:
+        container_name: "Backup"
+        image: prodrigestivill/postgres-backup-local
+        restart: always
+        volumes:
+          - "./backup:/backups"
+        links:
+          - postgresql:postgresql
+        depends_on:
+          - postgresql
+        environment:
+          - POSTGRES_HOST="sub.domain.com"
+          - POSTGRES_DB="synapse"
+          - POSTGRES_USER="synapse"
+          - POSTGRES_PASSWORD="somepassword"
+          - POSTGRES_EXTRA_OPTS="-Z9 --schema=public --blobs"
+          - SCHEDULE="@every 0h30m0s"
+          - BACKUP_KEEP_DAYS="7"
+          - BACKUP_KEEP_WEEKS="4"
+          - BACKUP_KEEP_MONTHS="6"
+          - HEALTHCHECK_PORT="81"
 networks:
     matrix-server:
 ```
+As you can se we have created backup contianer (`pgbackups`) to make backups of the postgres DB. You can read more about it on [https://github.com/prodrigestivill/docker-postgres-backup-local](https://github.com/prodrigestivill/docker-postgres-backup-local)
 
 Be sure to edit `VIRTUAL_HOST`, `SYNAPSE_SERVER_NAME`, `POSTGRES_PASSWORD` with your use case values. Save the file edits. To generate random password use this:
 ```
 openssl rand -base64 32
 ```
 
+## Generate a config file
 Now lets generate new synapse config file in `/synapse/data/` directory. Run command (be sure to change the `SYNAPSE_SERVER_NAME` to your domain):
 ```docker
 docker run -it --rm \
@@ -904,14 +933,19 @@ Now youre ready to deploy.
 ```
 docker-compose up -d
 ```
+
+## Generating an (admin) user
+
 Now before you get your panties wet, you must register yourself as an admin account. Use this (edit before use):
 ```docker
 docker exec -it synapse register_new_matrix_user http://local-ip-of-your-docker-machine:8008 -c /data/homeserver.yaml -u Your-username -p Your-password -a
 ```
 
+## Get yourself a matrix client
+
 Now Get yourself a client, read up [here](#get-yourself-a-matrix-client). And try to join your server, and create an account.
 
-## PostgreSQL basic usage (editing users)
+## PostgreSQL basic usage
 
 If you wan to edit users in your PostgreSQL DB then you will have to enter the the bash of the container.
 
@@ -928,5 +962,5 @@ Then you can check if there is data in your db:
 \dt
 ```
 
-Use `SELECT` * `FROM` `<table-name>`; to querry the db table.
+Use `SELECT` * `FROM` `rooms`; to querry the db table.
 

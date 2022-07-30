@@ -19,6 +19,10 @@ listeners:
     resources:
       - names: [client, federation]
         compress: false
+#database:
+#  name: sqlite3
+#  args:
+#    database: /data/homeserver.db        
 database:
     name: psycopg2
     args:
@@ -30,7 +34,7 @@ database:
         cp_max: 10
 log_config: "/data/sub.domain.com.log.config"
 media_store_path: /data/media_store
-#registration_shared_secret: "super-secret-key"
+registration_shared_secret: "super-secret-key"
 report_stats: true
 macaroon_secret_key: "super-secret-key"
 form_secret: "super-secret-key"
@@ -41,6 +45,6 @@ enable_registration: true
 enable_registration_without_verification: true
 client_max_body_size: 50M
 # vim:ft=yaml
-auto_join_rooms:
-  - "#exampleroom:sub.domain.com"
-  - "#anotherexampleroom:sub.domain.com"
+auto_join_rooms:                         # this is optional and you can comment this out.
+  - "#exampleroom:sub.domain.com"        # change the exampleroom for the name of your public room you will have on the server for people to auto join.
+  - "#anotherexampleroom:sub.domain.com" # you can add another room for new users to join
