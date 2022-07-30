@@ -32,6 +32,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
   - [Get yourself a matrix client](#get-yourself-a-matrix-client)
   - [Setting up Nginx Proxy manager (federation)](#setting-up-nginx-proxy-manager-federation)
 - [Matrix synapse Docker deployment [PostgreSQL]](#matrix-synapse-docker-deployment-postgresql)
+  - [PostgreSQL basic usage (editing users)](#postgresql-basic-usage-editing-users)
 
 
 # List of services/applications to host
@@ -909,3 +910,23 @@ docker exec -it synapse register_new_matrix_user http://local-ip-of-your-docker-
 ```
 
 Now Get yourself a client, read up [here](#get-yourself-a-matrix-client). And try to join your server, and create an account.
+
+## PostgreSQL basic usage (editing users)
+
+If you wan to edit users in your PostgreSQL DB then you will have to enter the the bash of the container.
+
+```
+docker exec -it postgres bash
+```
+
+Then you log into the postgres:
+```
+PGPASSWORD=super-secret-password psql -h localhost -p 5432 -U synapse -d synapse
+```
+Then you can check if there is data in your db:
+```
+\dt
+```
+
+Use `SELECT` * `FROM` `<table-name>`; to querry the db table.
+
