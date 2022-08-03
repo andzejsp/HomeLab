@@ -11,6 +11,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
   - [TODO](#todo)
 - [Proxmox installation](#proxmox-installation)
 - [Proxmox first time setup](#proxmox-first-time-setup)
+  - [VM hard drive space expanding](#vm-hard-drive-space-expanding)
   - [Laptop settings](#laptop-settings)
 - [Docker in proxmox LXC](#docker-in-proxmox-lxc)
   - [CT Templates](#ct-templates)
@@ -127,6 +128,73 @@ lvresize -l +100%FREE /dev/pve/root
 ```
 resize2fs /dev/mapper/pve-root
 ```
+
+## VM hard drive space expanding
+
+To expand your VM hard drive space, first log into proxmox web UI, then resize the VM disk.
+
+Then log into your VM and run few commands. Run `df -h` command to list filesystem:
+
+```
+df -h
+```
+
+```
+sus@sussy:~$ df -h
+Filesystem                         Size  Used Avail Use% Mounted on
+tmpfs                              198M  8.6M  190M   5% /run
+/dev/mapper/ubuntu--vg-ubuntu--lv   28G  7.8G   19G  30% /
+tmpfs                              989M     0  989M   0% /dev/shm
+tmpfs                              5.0M     0  5.0M   0% /run/lock
+/dev/sda2                          1.7G  261M  1.4G  17% /boot
+tmpfs                              198M  4.0K  198M   1% /run/user/1000
+```
+
+Note the name of your `mapper`: `/dev/mapper/ubuntu--vg-ubuntu--lv`
+
+Run as root vgdisplay
+
+```
+sudo vgdisplay
+```
+
+```
+  --- Volume group ---
+  VG Name               ubuntu-vg
+  System ID
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  5
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                1
+  Open LV               1
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               <30.25 GiB
+  PE Size               4.00 MiB
+  Total PE              7743
+  Alloc PE / Size       7231 / <28.25 GiB
+  Free  PE / Size       512 / 2.00 GiB
+  VG UUID               wyALx3-gIEp-80O8-EFvS-Fzd0-brTQ-UzrTR4
+```
+
+Note `Free  PE / Size` and the avaliable size. In my case i already have expanded my volume, yours may be different.
+
+Now expand the volume (as root)
+
+```
+lvextend -L +2G /dev/mapper/ubuntu--vg-ubuntu--lv
+```
+
+
+Now we resize/update filesystem:
+```
+resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+```
+Now youre good to go.
 
 ## Laptop settings
 
