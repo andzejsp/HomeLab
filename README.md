@@ -12,6 +12,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
 - [Proxmox installation](#proxmox-installation)
 - [Proxmox first time setup](#proxmox-first-time-setup)
   - [VM hard drive space expanding](#vm-hard-drive-space-expanding)
+  - [VM hard drive space expanding - alternative](#vm-hard-drive-space-expanding---alternative)
   - [Laptop settings](#laptop-settings)
 - [Docker in proxmox LXC](#docker-in-proxmox-lxc)
   - [CT Templates](#ct-templates)
@@ -195,6 +196,87 @@ Now we resize/update filesystem:
 resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
 ```
 Now youre good to go.
+
+## VM hard drive space expanding - alternative
+
+Firstly shutdown your VM, then to expand your VM hard drive space, first log into proxmox web UI, then resize the VM disk.
+
+Check your partitions and get the name of your hard drive partition:
+```
+sudo lsblk
+```
+
+```bash
+sus@sussy:~$ sudo lsblk
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+loop0    7:0    0     4K  1 loop /snap/bare/5
+loop1    7:1    0    62M  1 loop /snap/core20/1611
+loop2    7:2    0  63.2M  1 loop /snap/core20/1623
+loop3    7:3    0 163.3M  1 loop /snap/firefox/1670
+loop4    7:4    0 400.8M  1 loop /snap/gnome-3-38-2004/112
+loop5    7:5    0  67.8M  1 loop /snap/lxd/22753
+loop6    7:6    0    47M  1 loop /snap/snapd/16292
+loop7    7:7    0   284K  1 loop /snap/snapd-desktop-integration/14
+loop8    7:8    0  91.7M  1 loop /snap/gtk-common-themes/1535
+loop9    7:9    0  67.2M  1 loop /snap/lxd/21835
+loop10   7:10   0 346.3M  1 loop /snap/gnome-3-38-2004/115
+loop11   7:11   0 176.9M  1 loop /snap/firefox/1810
+loop12   7:12   0    48M  1 loop /snap/snapd/16778
+sda      8:0    0   104G  0 disk
+├─sda1   8:1    0     1M  0 part
+└─sda2   8:2    0    64G  0 part /
+sr0     11:0    1   1.2G  0 rom  /media/gamemaster/Ubuntu-Server 20.04.4 LTS amd641
+```
+
+In my case its sda2.
+
+Now grow that partition with:
+
+```
+sudo growpart /dev/sda 2
+```
+
+```
+sus@sussy:~$ sudo growpart /dev/sda 2
+CHANGED: partition=2 start=4096 old: size=134211584 end=134215680 new: size=218099679 end=218103775
+
+sus@sussy:~$ sudo lsblk
+NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+loop0    7:0    0     4K  1 loop /snap/bare/5
+loop1    7:1    0    62M  1 loop /snap/core20/1611
+loop2    7:2    0  63.2M  1 loop /snap/core20/1623
+loop3    7:3    0 163.3M  1 loop /snap/firefox/1670
+loop4    7:4    0 400.8M  1 loop /snap/gnome-3-38-2004/112
+loop5    7:5    0  67.8M  1 loop /snap/lxd/22753
+loop6    7:6    0    47M  1 loop /snap/snapd/16292
+loop7    7:7    0   284K  1 loop /snap/snapd-desktop-integration/14
+loop8    7:8    0  91.7M  1 loop /snap/gtk-common-themes/1535
+loop9    7:9    0  67.2M  1 loop /snap/lxd/21835
+loop10   7:10   0 346.3M  1 loop /snap/gnome-3-38-2004/115
+loop11   7:11   0 176.9M  1 loop /snap/firefox/1810
+loop12   7:12   0    48M  1 loop /snap/snapd/16778
+sda      8:0    0   104G  0 disk
+├─sda1   8:1    0     1M  0 part
+└─sda2   8:2    0   104G  0 part /
+sr0     11:0    1   1.2G  0 rom  /media/gamemaster/Ubuntu-Server 20.04.4 LTS amd641
+
+```
+
+Now to resize the partition for real:
+
+```
+sudo resize2fs /dev/sda2
+```
+
+```
+sus@sussy:~$ sudo resize2fs /dev/sda2
+resize2fs 1.46.5 (30-Dec-2021)
+Filesystem at /dev/sda2 is mounted on /; on-line resizing required
+old_desc_blocks = 8, new_desc_blocks = 13
+The filesystem on /dev/sda2 is now 27262459 (4k) blocks long.
+```
+
+You should be good now.
 
 ## Laptop settings
 
