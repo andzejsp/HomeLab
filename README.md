@@ -39,6 +39,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
   - [Generating an (admin) user](#generating-an-admin-user-1)
   - [Get yourself a matrix client](#get-yourself-a-matrix-client-1)
   - [PostgreSQL basic usage](#postgresql-basic-usage)
+- [Matrix dendrite Docker deployment [PostgreSQL]](#matrix-dendrite-docker-deployment-postgresql)
 
 
 # List of services/applications to host
@@ -1114,3 +1115,121 @@ Then you can check if there is data in your db:
 
 Use `SELECT` * `FROM` `rooms`; to querry the db table.
 
+# Matrix dendrite Docker deployment [PostgreSQL]
+
+Dendrite is a second-generation Matrix homeserver written in Go. It intends to provide an efficient, reliable and scalable alternative to Synapse. To install we will follow the official guide.
+Check it out here: [https://github.com/matrix-org/dendrite](https://github.com/matrix-org/dendrite). We will use docker but we will need to clone this repo.
+
+```
+git clone https://github.com/matrix-org/dendrite ./dendrite
+```
+Not sure if this is needed, but it worked for me.
+
+```
+cd dendrite
+```
+```
+./build.sh
+```
+
+Now create another folder outside `./dendrite` and cal it `./dendrite-compose`. This is where out dendrite will live.
+
+```
+mkdir dendrite-compose
+```
+
+Now get the example docker-compose.yml file from this repo: [https://github.com/matrix-org/dendrite/blob/main/build/docker/docker-compose.monolith.yml](https://github.com/matrix-org/dendrite/blob/main/build/docker/docker-compose.monolith.yml). And yes we using monolith because we are running it on one machine. And save it to your `./dendrite-compose/docker-compose.yml`.
+
+The most important parts of compose file to edit are:
+
+```yaml
+version: "3.4"
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: itsasecret
+
+  monolith:
+    restart: always
+```
+
+Set the password to the and monolith ro restart always.
+Next create folder` ./dendrite-compose/config` and copy file from `./dendrite/dendrite-sample.monolith.yaml` to `./dendrite-compose/config/dendrite.yaml`.
+
+```
+mkdir config
+```
+
+```
+cp ./dendrite/dendrite-sample.monolith.yaml ./dendrite-compose/config/dendrite.yaml
+```
+
+Now edit most important parts of this config file:
+
+```yaml
+global:
+  # The domain name of this homeserver.
+  server_name: your.domain.com
+
+  # Global database connection pool, for PostgreSQL monolith deployments only. If
+  # this section is populated then you can omit the "database" blocks in all other
+  # sections. For polylith deployments, or monolith deployments using SQLite databases,
+  # you must configure the "database" block for each component instead.
+  database:
+    connection_string: postgresql://dendrite:itsasecret@monolith/dendrite?sslmode=disable
+
+# Configuration for the Client API.
+client_api:
+
+  # If set, allows registration by anyone who knows the shared secret, regardless
+  # of whether registration is otherwise disabled.
+  registration_shared_secret: "someothersecret"
+
+# Configuration for enabling experimental MSCs on this homeserver.
+mscs:
+  mscs:
+   - msc2836  # (Threading, see https://github.com/matrix-org/matrix-doc/pull/2836)
+   - msc2946  # (Spaces Summary, see https://github.com/matrix-org/matrix-doc/pull/2946)
+
+```
+
+Copy this yaml file back to ./dendrite folder.
+
+```
+cp ./dendrite-compose/config/dendrite.yaml ./dendrite/dendrite.yaml 
+```
+
+Now go back to your ./dendrite folder and run this command to generate tls certs:
+
+```
+go run github.com/matrix-org/dendrite/cmd/generate-keys \
+  --private-key=matrix_key.pem \
+  --tls-cert=server.crt \
+  --tls-key=server.key
+```
+
+Then copy over generated files: matrix_key.pem, server.crt, server.key from `./dendrite` to `./dendrite-compose/config` folder.
+
+```
+cp ./dendrite/matrix_key.pem ./dendrite-compose/config/matrix_key.pem
+```
+```
+cp ./dendrite/server.crt ./dendrite-compose/config/server.crt
+```
+```
+cp ./dendrite/server.key ./dendrite-compose/config/server.key
+```
+
+Now go to ./dendrite-compose and run:
+
+```
+docker compose up -d
+```
+
+Once it is running we will create admn account:
+
+```
+docker exec -it CONTAINER_ID /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username YOUR_USERNAME -admin -url http://localhost:8008
+```
+
+Bob's your uncle.
