@@ -40,6 +40,8 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
   - [Get yourself a matrix client](#get-yourself-a-matrix-client-1)
   - [PostgreSQL basic usage](#postgresql-basic-usage)
 - [Matrix dendrite Docker deployment [PostgreSQL]](#matrix-dendrite-docker-deployment-postgresql)
+- [TrueNAS Core VM](#truenas-core-vm)
+  - [Adding HDD's to VM](#adding-hdds-to-vm)
 
 
 # List of services/applications to host
@@ -1233,3 +1235,67 @@ docker exec -it CONTAINER_ID /usr/bin/create-account -config /etc/dendrite/dendr
 ```
 
 Bob's your uncle.
+
+
+# TrueNAS Core VM
+
+Lets create a VM with minimal settings - 16GB storage for the OS and 8GB RAM, 2 CPU cores. Dont start the VM just yet.
+
+## Adding HDD's to VM
+
+Now lets add our existing HDD that are connected to the motherboard to this VM.
+
+Log into your proxmox node as root and run a command:
+
+```
+lsblk -o +model,serial
+```
+
+Now locate your HDD's that you want to add to the VM and note the serial numbers.
+
+```
+root@sussy:~# lsblk -o +model,serial
+NAME         MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT MODEL                          SERIAL
+loop0          7:0    0     4G  0 loop                                           
+loop1          7:1    0    28G  0 loop                                           
+sda            8:0    0 465.8G  0 disk            ST9500423AS                    5WR0QLDQ
+sdb            8:16   0 465.8G  0 disk            ST9500423AS                    5WR0PT3Y
+nvme0n1      259:0    0 465.8G  0 disk            Samsung SSD 970 EVO Plus 500GB S4EVNX0T406477V
+├─nvme0n1p1  259:1    0  1007K  0 part                                           
+├─nvme0n1p2  259:2    0   512M  0 part /boot/efi                                 
+└─nvme0n1p3  259:3    0 465.3G  0 part                                           
+  ├─pve-swap 253:0    0     8G  0 lvm  [SWAP]                                    
+  └─pve-root 253:1    0 457.3G  0 lvm  /  
+```
+
+Next lets get the device name from /dev/ folder
+
+
+```
+ls /dev/disk/by-id
+```
+
+You should see something like this:
+
+```
+root@apefront:~# ls /dev/disk/by-id
+ata-ST9500423AS_5WR0PT3Y                                                      nvme-eui.0025385421b05990-part2
+ata-ST9500423AS_5WR0QLDQ                                                      nvme-eui.0025385421b05990-part3
+dm-name-pve-root                                                              nvme-Samsung_SSD_970_EVO_Plus_500GB_S4EVNX0T406477V
+dm-name-pve-swap                                                              nvme-Samsung_SSD_970_EVO_Plus_500GB_S4EVNX0T406477V-part1
+dm-uuid-LVM-b2KUYxTy8RVM6K9LvWRqef2qAucbKnCiHpbnjGLfpLak1YOmoOoZ1lubbU4ZqT8G  nvme-Samsung_SSD_970_EVO_Plus_500GB_S4EVNX0T406477V-part2
+dm-uuid-LVM-b2KUYxTy8RVM6K9LvWRqef2qAucbKnCiZiWFVg15QYk9uoMCqYkqOXUZFgCACdDI  nvme-Samsung_SSD_970_EVO_Plus_500GB_S4EVNX0T406477V-part3
+lvm-pv-uuid-qOuhBY-CW3X-eXzl-yjIj-jzdA-zyKw-bJahq3                            wwn-0x5000c5003d6e0c92
+nvme-eui.0025385421b05990                                                     wwn-0x5000c5003d6f0f02
+nvme-eui.0025385421b05990-part1
+```
+
+Now lets add them to our VM. Note your VM id from the proxmox node list. And note your VM scsi drive count. Bydefault you should only have one drive added tou your VM - scsi0
+
+```
+qm set ID-OF-VM -scsi1 /dev/disk/by-id/ata-ST9500423AS_5WR0PT3Y
+```
+
+Rinse and repeat for all the drives and just update the -scsiX count.
+
+Now you can start the VM and install the TrueNAS. To log into web UI use root and the password you set during installation.
