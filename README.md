@@ -42,6 +42,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
 - [Matrix dendrite Docker deployment [PostgreSQL]](#matrix-dendrite-docker-deployment-postgresql)
 - [TrueNAS Core VM](#truenas-core-vm)
   - [Adding HDD's to VM](#adding-hdds-to-vm)
+- [Jellyfin media server deployment (docker)](#jellyfin-media-server-deployment-docker)
 
 
 # List of services/applications to host
@@ -67,6 +68,7 @@ List bellow will contain services/application that i want to deploy on this home
   - Mordhau (optional)
   - Xonotic
   - Quake LIVE
+- Media Server
 
 # Disclaimer
 
@@ -90,6 +92,8 @@ List of resources to go through and make proper instruction set for deployment.
 - [https://www.youtube.com/watch?v=fzBCR_C26QE](https://www.youtube.com/watch?v=fzBCR_C26QE)
 - [https://www.youtube.com/watch?v=Qrglquxw-6I](https://www.youtube.com/watch?v=Qrglquxw-6I)
 - [https://www.youtube.com/watch?v=Qrglquxw-6I](https://www.youtube.com/watch?v=Qrglquxw-6I)
+- [https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu](https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu
+)
   
 # Proxmox installation
 
@@ -1299,3 +1303,95 @@ qm set ID-OF-VM -scsi1 /dev/disk/by-id/ata-ST9500423AS_5WR0PT3Y
 Rinse and repeat for all the drives and just update the -scsiX count.
 
 Now you can start the VM and install the TrueNAS. To log into web UI use root and the password you set during installation.
+
+# Jellyfin media server deployment (docker)
+
+Here we will deploy jellyfin using docker compose. Before that if we have a media that is shared on network such as NAS. Easiest way is to make ir SMB share and then you will need to mount the share on your OS where jellyfin is going to live.
+
+Firstly lets create few folders
+
+```
+mkdir jellyfin
+```
+
+```
+cd jellyfin
+```
+
+```
+mkdir config tvseries movies share
+```
+
+Lets mount the networkshare you have going. You will need to find out the ip/media folder of your network share. Also username and password to access the folder. Lets install the things we need to mount the SMB share.
+
+```
+sudo apt-get install cifs-utils
+```
+
+Now lets mount our share folder.
+
+```
+sudo mount -t cifs -o user=<user on VPSA> //<vpsa_ip_address>/<export_share> /mnt/<local_share>
+```
+
+Example:
+```
+sudo mount -t cifs -o user=sussy //192.168.12.22/media ./share
+```
+
+In case you reboot just add to fstab file to mount this on boot:
+
+Mounting at boot
+
+add to /etc/fstab file:
+```
+//<vpsa_ip_address>/<export_share>  /mnt/<local_share> cifs user=<user on VPSA>,pass=<passwd on VPSA> 0 0
+```
+Now lets find out what user is your current user, minde the group id and user id. We will need these values later.
+
+```
+id YOUR-USER-NAME
+```
+
+OUTPUT:
+```bash
+uid=1000(YOUR-USER-NAME) gid=1000(YOUR-USER-NAME) groups=1000(YOUR-USER-NAME),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),110(lxd)
+```
+
+Now lets create our docker-compose.yaml file:
+
+```
+sudo nano docker-compose.yaml
+```
+
+```yaml
+version: "2.1"
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Helsinki
+      #- JELLYFIN_PublishedServerUrl=192.168.0.5 #optional
+    volumes:
+      - ./config:/config
+      - ./tvseries:/data/tvshows
+      - ./movies:/data/movies
+      - ./truenas_share:/data/share
+    ports:
+      - 8096:8096
+      #- 8920:8920 #optional
+      #- 7359:7359/udp #optional
+      #- 1900:1900/udp #optional
+    restart: always
+```
+
+Finally lets launch it:
+
+```
+sudo docker compose up -d
+```
+
+Now you just have to go to your http://ip:8096 and create account.
