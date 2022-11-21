@@ -92,8 +92,8 @@ List of resources to go through and make proper instruction set for deployment.
 - [https://www.youtube.com/watch?v=fzBCR_C26QE](https://www.youtube.com/watch?v=fzBCR_C26QE)
 - [https://www.youtube.com/watch?v=Qrglquxw-6I](https://www.youtube.com/watch?v=Qrglquxw-6I)
 - [https://www.youtube.com/watch?v=Qrglquxw-6I](https://www.youtube.com/watch?v=Qrglquxw-6I)
-- [https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu](https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu
-)
+- [https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu](https://support.zadarastorage.com/hc/en-us/articles/213024986-How-to-Mount-a-SMB-Share-in-Ubuntu)
+- [I found an Excellent Raspberry Pi Replacement for Home Assistant / IOTstack (incl. Proxmox)](https://www.youtube.com/watch?v=rXc_zGRYhLo)
   
 # Proxmox installation
 
