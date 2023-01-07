@@ -1205,7 +1205,7 @@ global:
   # sections. For polylith deployments, or monolith deployments using SQLite databases,
   # you must configure the "database" block for each component instead.
   database:
-    connection_string: postgresql://dendrite:itsasecret@monolith/dendrite?sslmode=disable
+    connection_string: postgresql://dendrite:itsasecret@postgres/dendrite?sslmode=disable
 
 # Configuration for the Client API.
 client_api:
