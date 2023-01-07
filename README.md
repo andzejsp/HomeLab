@@ -1134,6 +1134,14 @@ Not sure if this is needed, but it worked for me.
 ```
 cd dendrite
 ```
+Make sure go is installed, if not then:
+
+```
+sudo apt install golang-go
+```
+
+Then build it:
+
 ```
 ./build.sh
 ```
