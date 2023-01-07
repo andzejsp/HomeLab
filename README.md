@@ -1154,6 +1154,17 @@ mkdir dendrite-compose
 
 Now get the example docker-compose.yml file from this repo: [https://github.com/matrix-org/dendrite/blob/main/build/docker/docker-compose.monolith.yml](https://github.com/matrix-org/dendrite/blob/main/build/docker/docker-compose.monolith.yml). And yes we using monolith because we are running it on one machine. And save it to your `./dendrite-compose/docker-compose.yml`.
 
+Or:
+
+```
+cp ./dendrite/build/docker/docker-compose.monolith.yml ./dendrite-compose/docker-compose.yml 
+```
+Now lets edit this file:
+
+```
+sudo nano ./dendrite-compose/docker-compose.yml
+```
+
 The most important parts of compose file to edit are:
 
 ```yaml
@@ -1171,7 +1182,7 @@ Set the password to the and monolith ro restart always.
 Next create folder` ./dendrite-compose/config` and copy file from `./dendrite/dendrite-sample.monolith.yaml` to `./dendrite-compose/config/dendrite.yaml`.
 
 ```
-mkdir config
+mkdir ./dendrite-compose/config
 ```
 
 ```
@@ -1179,6 +1190,10 @@ cp ./dendrite/dendrite-sample.monolith.yaml ./dendrite-compose/config/dendrite.y
 ```
 
 Now edit most important parts of this config file:
+
+```
+sudo nano ./dendrite-compose/config/dendrite.yaml
+```
 
 ```yaml
 global:
@@ -1240,7 +1255,7 @@ Now go to ./dendrite-compose and run:
 docker compose up -d
 ```
 
-Once it is running we will create admn account:
+Once it is running we will create admin account:
 
 ```
 docker exec -it CONTAINER_ID /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username YOUR_USERNAME -admin -url http://localhost:8008
