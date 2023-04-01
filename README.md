@@ -800,6 +800,14 @@ Setting up web server i used Nginx without SSL because im using Nginx reverse pr
 
 Also make sure to forward any ports that your game server needs.
 
+Make sure to prune docker images once a month or more often.
+
+```
+docker image prune -a
+```
+
+This will save up on your storage.
+
 # Matrix synapse Docker deployment [TEST environment]
 
 Before we start, you need to have docker engine running on your system. After that we will follow the [official instructions](https://hub.docker.com/r/matrixdotorg/synapse/).
