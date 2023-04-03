@@ -12,6 +12,12 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
 - [Proxmox installation](#proxmox-installation)
 - [Proxmox first time setup](#proxmox-first-time-setup)
   - [VM hard drive space expanding](#vm-hard-drive-space-expanding)
+  - [Configure GPU passthrough](#configure-gpu-passthrough)
+    - [Step 1: Configuring the Grub](#step-1-configuring-the-grub)
+    - [Step 2: VFIO Modules](#step-2-vfio-modules)
+    - [Step 3: IOMMU interrupt remapping](#step-3-iommu-interrupt-remapping)
+    - [Step 4: Blacklisting Drivers](#step-4-blacklisting-drivers)
+    - [Step 5: Adding GPU to VFIO](#step-5-adding-gpu-to-vfio)
   - [VM hard drive space expanding - alternative](#vm-hard-drive-space-expanding---alternative)
   - [Laptop settings](#laptop-settings)
 - [Docker in proxmox LXC](#docker-in-proxmox-lxc)
@@ -27,23 +33,22 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
 - [Pi-hole (in LXC)](#pi-hole-in-lxc)
   - [Adblock lists](#adblock-lists)
 - [Pterodactyl installation](#pterodactyl-installation)
-- [Matrix synapse Docker deployment [TEST environment]](#matrix-synapse-docker-deployment-test-environment)
+- [Matrix synapse Docker deployment \[TEST environment\]](#matrix-synapse-docker-deployment-test-environment)
   - [Generate a config file](#generate-a-config-file)
   - [Running synapse container](#running-synapse-container)
   - [Generating an (admin) user](#generating-an-admin-user)
   - [Get yourself a matrix client](#get-yourself-a-matrix-client)
   - [Setting up Nginx Proxy manager (federation)](#setting-up-nginx-proxy-manager-federation)
-- [Matrix synapse Docker deployment [PostgreSQL]](#matrix-synapse-docker-deployment-postgresql)
+- [Matrix synapse Docker deployment \[PostgreSQL\]](#matrix-synapse-docker-deployment-postgresql)
   - [Create docker-compose file](#create-docker-compose-file)
   - [Generate a config file](#generate-a-config-file-1)
   - [Generating an (admin) user](#generating-an-admin-user-1)
   - [Get yourself a matrix client](#get-yourself-a-matrix-client-1)
   - [PostgreSQL basic usage](#postgresql-basic-usage)
-- [Matrix dendrite Docker deployment [PostgreSQL]](#matrix-dendrite-docker-deployment-postgresql)
+- [Matrix dendrite Docker deployment \[PostgreSQL\]](#matrix-dendrite-docker-deployment-postgresql)
 - [TrueNAS Core VM](#truenas-core-vm)
   - [Adding HDD's to VM](#adding-hdds-to-vm)
 - [Jellyfin media server deployment (docker)](#jellyfin-media-server-deployment-docker)
-
 
 # List of services/applications to host
 
@@ -203,6 +208,121 @@ Now we resize/update filesystem:
 resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
 ```
 Now youre good to go.
+
+## Configure GPU passthrough
+
+As per guide [https://www.reddit.com/r/homelab/comments/b5xpua/the_ultimate_beginners_guide_to_gpu_passthrough/](https://www.reddit.com/r/homelab/comments/b5xpua/the_ultimate_beginners_guide_to_gpu_passthrough/)
+### Step 1: Configuring the Grub
+
+Assuming you are using an Intel CPU, either SSH directly into your Proxmox server, or utilizing the noVNC Shell terminal under "Node", open up the /etc/default/grub file. I prefer to use nano, but you can use whatever text editor you prefer.
+```
+nano /etc/default/grub
+```
+Look for this line:
+
+`GRUB_CMDLINE_LINUX_DEFAULT="quiet"`
+
+Then change it to look like this:
+
+For Intel CPUs:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on"
+```
+For AMD CPUs:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on"
+```
+IMPORTANT ADDITIONAL COMMANDS
+
+You might need to add additional commands to this line, if the passthrough ends up failing. For example, if you're using a similar CPU as I am (Xeon E3-12xx series), which has horrible IOMMU grouping capabilities, and/or you are trying to passthrough a single GPU.
+
+These additional commands essentially tell Proxmox not to utilize the GPUs present for itself, as well as helping to split each PCI device into its own IOMMU group. This is important because, if you try to use a GPU in say, IOMMU group 1, and group 1 also has your CPU grouped together for example, then your GPU passthrough will fail.
+
+Here are my grub command line settings:
+```
+GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt pcie_acs_override=downstream,multifunction nofb nomodeset video=vesafb:off,efifb:off"
+```
+For more information on what these commands do and how they help:
+
+A. Disabling the Framebuffer: video=vesafb:off,efifb:off
+
+B. ACS Override for IOMMU groups: pcie_acs_override=downstream,multifunction
+
+When you finished editing /etc/default/grub run this command:
+```
+update-grub
+```
+### Step 2: VFIO Modules
+
+You'll need to add a few VFIO modules to your Proxmox system. Again, using nano (or whatever), edit the file /etc/modules
+```
+nano /etc/modules
+```
+Add the following (copy/paste) to the /etc/modules file:
+```
+vfio
+vfio_iommu_type1
+vfio_pci
+vfio_virqfd
+```
+Then save and exit.
+
+### Step 3: IOMMU interrupt remapping
+
+I'm not going to get too much into this; all you really need to do is run the following commands in your Shell:
+```
+echo "options vfio_iommu_type1 allow_unsafe_interrupts=1" > /etc/modprobe.d/iommu_unsafe_interrupts.conf
+```
+```
+echo "options kvm ignore_msrs=1" > /etc/modprobe.d/kvm.conf
+```
+### Step 4: Blacklisting Drivers
+
+We don't want the Proxmox host system utilizing our GPU(s), so we need to blacklist the drivers. Run these commands in your Shell:
+```
+echo "blacklist radeon" >> /etc/modprobe.d/blacklist.conf
+echo "blacklist nouveau" >> /etc/modprobe.d/blacklist.conf
+echo "blacklist nvidia" >> /etc/modprobe.d/blacklist.conf
+```
+### Step 5: Adding GPU to VFIO
+
+Run this command:
+```
+lspci -v
+```
+Your shell window should output a bunch of stuff. Look for the line(s) that show your video card. It'll look something like this:
+
+01:00.0 VGA compatible controller: NVIDIA Corporation GP104 [GeForce GTX 1070] (rev a1) (prog-if 00 [VGA controller])
+
+01:00.1 Audio device: NVIDIA Corporation GP104 High Definition Audio Controller (rev a1)
+
+Make note of the first set of numbers (e.g. 01:00.0 and 01:00.1). We'll need them for the next step.
+
+Run the command below. Replace 01:00 with whatever number was next to your GPU when you ran the previous command:
+```
+lspci -n -s 01:00
+```
+Doing this should output your GPU card's Vendor IDs, usually one ID for the GPU and one ID for the Audio bus. It'll look a little something like this:
+
+01:00.0 0000: 10de:1b81 (rev a1)
+
+01:00.1 0000: 10de:10f0 (rev a1)
+
+What we want to keep, are these vendor id codes: 10de:1b81 and 10de:10f0.
+
+Now we add the GPU's vendor id's to the VFIO ``(remember to replace the id's with your own!)``:
+```
+echo "options vfio-pci ids=10de:1b81,10de:10f0 disable_vga=1"> /etc/modprobe.d/vfio.conf
+```
+Finally, we run this command:
+```
+update-initramfs -u
+```
+And restart:
+```
+reset
+```
+Now your Proxmox host should be ready to passthrough GPUs!
 
 ## VM hard drive space expanding - alternative
 
