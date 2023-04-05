@@ -542,6 +542,10 @@ Then add Nginx proxy manager container, set it up to reverse into portainer
 
 Set up a new stack and name it: nginxproxymanager
 
+More info about migrating:
+
+https://github.com/NginxProxyManager/nginx-proxy-manager/discussions/1529#migrate-to-new-instance
+
 Docker compose: [Template](Docker-compose-templates/nginxproxymanager.yml)
 ```yaml
 ---
