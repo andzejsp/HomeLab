@@ -20,6 +20,7 @@ Project goal is to deploy a home lab server. Server is multi purpose and will co
     - [Step 5: Adding GPU to VFIO](#step-5-adding-gpu-to-vfio)
   - [VM hard drive space expanding - alternative](#vm-hard-drive-space-expanding---alternative)
   - [Laptop settings](#laptop-settings)
+- [Proxmox after hardware change - network interface name change](#proxmox-after-hardware-change---network-interface-name-change)
 - [Docker in proxmox LXC](#docker-in-proxmox-lxc)
   - [CT Templates](#ct-templates)
   - [Create CT](#create-ct)
@@ -448,6 +449,64 @@ update-grub
 ```
 
 Now everything should be good.
+
+# Proxmox after hardware change - network interface name change
+
+When adding PCIe cards the network interface might get renamed. In order to correct this just log into the terminal/console.
+
+Check your network interfaces with
+
+```
+ip link | head -20
+```
+
+Take notice of the interface that has the MAC address for the IP that you have set up manually in DHCP of your router. Usually its either *enp4s0* or *enp5s0*.
+
+Then lets check network interfaces.
+
+```
+nano /etc/network/interfaces
+```
+
+It should look like this:
+
+```
+auto lo
+iface lo inet loopback
+
+iface enp4s0 inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+        address xxx.xxx.xxx.xxx/xx #<- proxmox server ip
+        gateway xxx.xxx.xxx.xxx/xx #<- router ip
+        bridge_ports enp4s0
+        bridge_stp off
+        bridge_fd 0
+iface wlp4s0 inet manual
+```
+
+Notice that *bridge_ports enp4s0* and *iface enp4s0 inet manual* must match the same that your *ip link | head -20* interface had with the MAC address for your server.
+
+To reboot network interfaces, use this:
+
+```
+systemctl restart networking.service
+```
+
+or
+
+```
+ifreload -a
+```
+
+and or reboot server.
+
+```
+reboot now
+```
+
+
 # Docker in proxmox LXC
 
 ## CT Templates
