@@ -515,7 +515,7 @@ nano /etc/default/grub
 Add this line to:
 
 ```
-GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+GRUB_CMDLINE_LINUX="net.ifnames=1"
 ```
 
 Then dont forget
