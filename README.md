@@ -506,6 +506,29 @@ and or reboot server.
 reboot now
 ```
 
+Also you can just update your grub to keep persistent names.
+
+```
+nano /etc/default/grub
+```
+
+Add this line to:
+
+```
+GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"
+```
+
+Then dont forget
+
+```
+update-grub
+```
+
+And:
+
+```
+reboot
+```
 
 # Docker in proxmox LXC
 
