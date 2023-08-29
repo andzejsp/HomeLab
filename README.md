@@ -515,7 +515,7 @@ nano /etc/default/grub
 Add this line to:
 
 ```
-GRUB_CMDLINE_LINUX="net.ifnames=1"
+GRUB_CMDLINE_LINUX_DEFAULT="net.ifnames=1"
 ```
 
 Then dont forget
